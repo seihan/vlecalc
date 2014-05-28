@@ -33,7 +33,7 @@ Unifac <- function(x, unu, aij, temperature) {
   for (i in 1:nog) {
     S[i] <- sum(x * q * eij[i, ]) / sum(x * q)
   }
-  tau <- exp(-aij / Temperature)
+  tau <- exp(-aij / temperature)
   beta <- matrix(0, noc, nog)
   for (i in 1:noc) {
     for (j in 1:nog) {
