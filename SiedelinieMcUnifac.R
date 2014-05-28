@@ -79,7 +79,7 @@ SiedelinieMcUnifac <- function(components,frac,unu,aij,kP){
   c2 <- 0
   y <- complist[, 9] # vapour mole fraction at dewpoint
   objF <- function(temperature, kP, act, y){  # objective function
-    kP - (1 / sum(y / (act * Ps(Temperature))))
+    kP - (1 / sum(y / (act * Ps(temperature))))
   }
   while (c2 < 10) {
     tFormer <- temperature
@@ -116,12 +116,12 @@ SiedelinieMcUnifac <- function(components,frac,unu,aij,kP){
                                        upper=tFormer + dT,
                                        temperature=tFormer,
                                        kP=pCalc,
-                                       Ps=Ps(Temperature),
+                                       Ps=Ps(temperature),
                                        y=y,
                                        tol=1000)[1])
     tNew <- temperature
     dT <- tNew - tFormer
-    act <- Unifac(X(y, pCalc, Ps(Temperature)), unu, aij, temperature)
+    act <- Unifac(X(y, pCalc, Ps(temperature)), unu, aij, temperature)
     c2 <- c2 + 1
   }
   t100 <- (temp + temperature) / 2
@@ -139,10 +139,10 @@ SiedelinieMcUnifac <- function(components,frac,unu,aij,kP){
   l <- 1 # liquid part
   lList <- c() # initiate list for liquid fraction
   c3List <- c() # list for iteration control
-  tRange <- seq(T0,T100,1)
+  tRange <- seq(t0,t100,1)
   #e <- 0.01
   for (i in 1:length(tRange)){
-    printf('%s ', Percent(i / length(Trange)))
+    printf('%s ', Percent(i / length(tRange)))
     c3 <- 0
     #Ps <- Antoine(complist[,2],complist[,3],complist[,4],Trange[i]) # list with saturated pressures
     k <- Ps(tRange[i]) / kP # Equilibrium constants
@@ -155,7 +155,7 @@ SiedelinieMcUnifac <- function(components,frac,unu,aij,kP){
       x <- solve(A, b)  # solve the system
       if ((abs(sum(x) - 1) < e) && (abs(sum(k * x) - 1) < e) || (c3 > 999)) {
         break
-      } else if (abs(sum(K*x) < 1)) {
+      } else if (abs(sum(k * x) < 1)) {
         l <- l + e
       }
       else {
@@ -164,7 +164,7 @@ SiedelinieMcUnifac <- function(components,frac,unu,aij,kP){
       c3 <- c3 + 1
     }
     lList <- rbind(lList, l)
-    c3List <- rbind(c3list, c3)
+    c3List <- rbind(c3List, c3)
   }
   colnames(c3List) <- 'iterations'
   temLiquid <- cbind(tRange, lList*100)
@@ -172,7 +172,7 @@ SiedelinieMcUnifac <- function(components,frac,unu,aij,kP){
   colnames(temLiquid) <- c('T [K]','% liquid')
   t0100 <- c(t0,t100) # T.bubble, T.dew
   iT0100 <- c(c1,c2) # iterations
-  return(list(T0100, c(pCalc1, pCalc), iT0100, c3List, temLiquid))
+  return(list(t0100, c(pCalc1, pCalc), iT0100, c3List, temLiquid))
 }
 ## Examples, uncomment for using2
 #Siedelinie.inf(c(5,1,30),c(0.2,0.4,0.4),1.013e+5)
@@ -181,7 +181,7 @@ SiedelinieMcUnifac <- function(components,frac,unu,aij,kP){
 #udat<-unifactool2()
 #unu <- udat[[1]]
 #aij <- udat[[2]]
-FACE6<-Siedelinie.mc.real(c(30,24,23,14,17,15,27,13,16),c(0.098,0.314,0.060,0.198,0.010,0.091,0.050,0.099,0.080),unu,aij,1.013e+5)
+FACE6<-SiedelinieMcUnifac(c(30,24,23,14,17,15,27,13,16),c(0.098,0.314,0.060,0.198,0.010,0.091,0.050,0.099,0.080),unu,aij,1.013e+5)
 #   boil.T <- c()
 #   for (i in 1:noc){
 #     boil.T <- c(boil.T,Tboil(components[i],P))
@@ -192,8 +192,8 @@ FACE6<-Siedelinie.mc.real(c(30,24,23,14,17,15,27,13,16),c(0.098,0.314,0.060,0.19
 #   complist <- complist[order(complist[,10]), ]
 #   print(complist[,9])
 #   return(complist)
-pdf("vapline-FACE6.pdf")
+#pdf("vapline-FACE6.pdf")
 plot(100-FACE6[[5]][,2],FACE6[[5]][,1],type='l',lwd=2,main='Vaporization Line - FACE#6',xlab='Evaporated fraction [%]',ylab='T [K]')
 #legend(0.05,1,c("Experiment (DDB)","Ideal","Van Laar","Margules","SRK (k12 = -0.1)","UNIQUAC (PHI = 1)"),lty=c(NA,1,6,4,2,2),lwd=c(1.5,2,2,2,2),pch=c(8,NA,NA,NA,NA,NA),col=c("black","gray66","blue2","red","firebrick","seagreen"),cex=0.7,merge=FALSE)
-dev.off()
+#dev.off()
 
