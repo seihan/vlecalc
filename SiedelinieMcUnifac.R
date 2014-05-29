@@ -174,26 +174,3 @@ SiedelinieMcUnifac <- function(components,frac,unu,aij,kP){
   iT0100 <- c(c1,c2) # iterations
   return(list(t0100, c(pCalc1, pCalc), iT0100, c3List, temLiquid))
 }
-## Examples, uncomment for using2
-#Siedelinie.inf(c(5,1,30),c(0.2,0.4,0.4),1.013e+5)
-#Siedelinie.mc.real(c(13,15,14,16,17,24,23,27,30),c(0.099,0.091,0.198,0.08,0.01,0.314,0.06,0.05,0.098),1,2,1.013e+5)
-#n-heptylbenzene,naphthalene,tetralin,n-hexadecane,cyclohexane,n-octadecane,phenanthrene,n-tetradecane,n-heneicosane
-#udat<-unifactool2()
-#unu <- udat[[1]]
-#aij <- udat[[2]]
-FACE6<-SiedelinieMcUnifac(c(30,24,23,14,17,15,27,13,16),c(0.098,0.314,0.060,0.198,0.010,0.091,0.050,0.099,0.080),unu,aij,1.013e+5)
-#   boil.T <- c()
-#   for (i in 1:noc){
-#     boil.T <- c(boil.T,Tboil(components[i],P))
-#   }
-#   # add boiling points to Complist
-#   complist <- cbind(complist,boil.T)
-#   # sort list by boiling points
-#   complist <- complist[order(complist[,10]), ]
-#   print(complist[,9])
-#   return(complist)
-#pdf("vapline-FACE6.pdf")
-plot(100-FACE6[[5]][,2],FACE6[[5]][,1],type='l',lwd=2,main='Vaporization Line - FACE#6',xlab='Evaporated fraction [%]',ylab='T [K]')
-#legend(0.05,1,c("Experiment (DDB)","Ideal","Van Laar","Margules","SRK (k12 = -0.1)","UNIQUAC (PHI = 1)"),lty=c(NA,1,6,4,2,2),lwd=c(1.5,2,2,2,2),pch=c(8,NA,NA,NA,NA,NA),col=c("black","gray66","blue2","red","firebrick","seagreen"),cex=0.7,merge=FALSE)
-#dev.off()
-
