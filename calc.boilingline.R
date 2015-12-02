@@ -5,14 +5,10 @@ calc.boilingline = function(Substances=c(),
                             verbose=FALSE){
   # calculate and plot the boilingline of multicomponent mixtures
   # load and define functions:
+  source('calc.dewpoint.T.R');
   source('calc.bubblepoint.T.R');
-  source('calc.bubblepoint.P.R');
-  source('calc.dewpoint.T.UNIFAC.R');
-  source('calc.dewpoint.P.R');
   source('sub.check.R');
   source('Antoine.P.R');
-  source('UNIFAC.gen.R');
-  source('UNIFAC.R');
   Percent = function(x, digits = 2, format = "f", ...) {
     paste0(formatC(100 * x, format = format, digits = digits, ...), "%")
   }
@@ -42,6 +38,10 @@ calc.boilingline = function(Substances=c(),
   }
   # non ideal solution
   if(UNIFAC){
+    source('calc.dewpoint.P.R');
+    source('calc.bubblepoint.P.R');
+    source('UNIFAC.gen.R');
+    source('UNIFAC.R');    
     Uvalues = UNIFAC.gen(Substances) # load or generate UNIFAC values
     unu = Uvalues[[1]]
     aij = Uvalues[[2]]
@@ -57,29 +57,30 @@ calc.boilingline = function(Substances=c(),
       Pb = calc.bubblepoint.P(Substances,Fractions,Trange[i]);
       # steam check
       if((Pd < Pressure) && (Pressure < Pb)){
-        if(verbose) printf('\nSteam exists.');
+        if(verbose) printf('\nsteam');
         v = (Pb - Pressure) / (Pb - Pd); # first guess
-        boilline = c(boilline, Trange[i], v)
-        x = Fractions
+        boilline = c(boilline, Trange[i], v);
+        x = Fractions;
       }
-      else if(verbose) printf('\nNo Steam, no calculations.')
+      else if((Pressure > Pb) && (verbose)) printf('\nliquid');
+      if ((Pressure > Pd) && (verbose)) printf('\nvapor');
     }
     if(verbose)printf('\n');
     boilline = matrix(boilline, ncol=2, byrow=T);
     boilline = rbind(c(T0,0), boilline);
-    boilline = rbind(boilline, c(T100,1));
-    colnames(boilline) = c('T [K]', '% liquid')
-    maintitle = paste(c(Substances, 'boilingline.unifac'), collapse='-')
+    boilline[steps,] = c(T100,1);
+    colnames(boilline) = c('T [K]', '% vapor');
+    maintitle = paste(c(Substances, 'boilingline.unifac'), collapse='-');
     subtitle = c('P =', Pressure, 'Pa');
-    filename = paste(c(maintitle,'pdf'),collapse='.')
-    pdf(file=filename)
+    filename = paste(c(maintitle,'pdf'),collapse='.');
+    pdf(file=filename);
     plot(c(0,1), c(T0,T100),
          main=toupper(paste(maintitle, collapse='-')),
          xlab='Evaporated fraction',ylab='T [K]',
          sub=paste(subtitle, collapse=' '),
-         type='p')
-    lines(boilline[,2],boilline[,1],type='l',lwd=2)
-    dev.off()
+         type='p');
+    lines(boilline[,2],boilline[,1],type='l',lwd=2);
+    dev.off();
     T0100 = c(T0,T100); # T.bubble, T.dew
     result=list(BubbleAndDewpoint=T0100,
                 TemperatureToVapor=boilline);
@@ -113,7 +114,7 @@ calc.boilingline = function(Substances=c(),
       K = Ps(Trange[i]) / Pressure; # Equilibrium constants
       l = optimize(f=objF, lower=0, upper=1, tol=e)[[1]]; # one dimensional optimization
       l1 = l;
-      if(abs(0.5 - l) < e){ # starts iteration if the optimization fails
+      if(abs(0.5 - l) < 0.001){ # starts iteration if the optimization fails
         l = 1;
         repeat{
           xf = l * (1 - K) + K;  # x factors for linear equation system
@@ -136,7 +137,7 @@ calc.boilingline = function(Substances=c(),
       if(verbose){
         printf('\nl1 = %.3f, l2 = %.3f, iterations = %1.0f, progress = %s',
                l1, l, c, Percent(i / steps));        
-      }
+      }   
       xList = rbind(xList, x);    
       lList = rbind(lList, l);
       cList = rbind(cList, c);
@@ -144,17 +145,19 @@ calc.boilingline = function(Substances=c(),
     if(verbose)printf('\n');
     colnames(xList) = Substances;
     temLiquid = cbind(Trange, lList);
-    temLiquid = rbind(temLiquid,c(T100,0));
+    temLiquid[steps, ] = c(T100,0);
+#    temLiquid = rbind(temLiquid,c(T100,0));
     colnames(temLiquid) = c('T [K]','% liquid');
     T0100 = c(T0,T100); # T.bubble, T.dew
     # plot
+    Substances='Test1'
     maintitle = paste(c(Substances, 'boilingcurve'), collapse='-');
     subtitle = c('P =', Pressure, 'Pa');
     filename = paste(c(maintitle,'pdf'),collapse='.');
     pdf(file=filename)
-    plot(c(0,1), c(T0,T100),
-         main=toupper(paste(maintitle, collapse='-')),
-         #   main='FACE#5',
+    plot(c(0,1), c(400,700),
+#          main=toupper(paste(maintitle, collapse='-')),
+           main='FACE#5',
          xlab='Evaporated fraction',ylab='T [K]',
          sub=paste(subtitle, collapse=' '),
          type='p')

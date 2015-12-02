@@ -30,7 +30,21 @@ calc.dewpoint.P = function(Substances=c(),
   sublist = NULL;
   for (i in 1:length(Substances)){
     tmp = sub.check(Substances[i]);
-    sublist = rbind(sublist, tmp[1,]);
+    # maximum temperature check
+    c = 1;
+    inrange = FALSE;
+    repeat{
+      if((Temperature > tmp$T.max[c] - 10) && ((c + 1) <= nrow(tmp))){
+        c = c + 1;
+      }
+      else inrange = TRUE;
+      if ((c == nrow(tmp)) || (inrange)) break;
+    }
+    if(Temperature > tmp$T.max[c]){
+      warning('The temperature of ', round(Temperature,0),
+              'K exceeds valid range of ', round(tmp$T.max[c],0), 'K from substance ', tmp[1,1],'.');
+    }
+    sublist = rbind(sublist, tmp[c,]);
   }
   u = UNIFAC.gen(Substances); # load or generate UNIFAC values
   unu = u[[1]];
@@ -53,7 +67,7 @@ calc.dewpoint.P = function(Substances=c(),
     if((dP < e) || (c > 999))break
   }
   result = list(Pressure=Pnew,
-                Activity=act,
+                ActivityCoefficients=act,
                 LiquidFractions=x,
                 Iterations=c);
   return(result);
