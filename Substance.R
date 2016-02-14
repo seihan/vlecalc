@@ -17,20 +17,6 @@ Substance = function(name){
     stop('\nCritical values for ', name,' not found.');
   }
   EleMass = read.csv('ElementMasses.csv', sep=',');  # load element masses file to calc. the molare mass
-  tmp1 = unlist(strsplit(gsub('[[:digit:]]', ' ',criticals$Formula), ' ')) # get characters
-  tmp1 = tmp1[tmp1 != '']; # remove empty strings
-  tmp2 = as.numeric(unlist(strsplit(gsub('[[:alpha:]]', ' ',criticals$Formula), ' '))); # get numbers
-  tmp2 = tmp2[!is.na(tmp2)]; # remove NA
-  M = 0; # molare mass
-  for (i in 1:length(tmp1)){
-    mass = EleMass[grep(tmp1[i], EleMass$Element), ]$Mass;
-    if(i <= length(tmp2)){
-      M = M + tmp2[i] * mass;
-    }
-    else{
-      M = M + mass;
-    }
-  }
   string = tail(unlist(strsplit(gsub('',' ', criticals$Formula), ' ')), -1);
   elements = string[1];
   mass = NULL;
@@ -64,13 +50,12 @@ Substance = function(name){
   for (i in 1:length(elements)){
     mass = append(mass, EleMass[grep(elements[i], EleMass$Element), ]$Mass);
   }
-  M2 = sum(factors * mass);
+  M = sum(factors * mass);
   result = list(Antoine = Antoine,
                 Ac = criticals$Ac,
                 Pc = criticals$Pc,
                 Tc = criticals$Tc,
-                MolarMass1 = M,
-                MolarMass2 = M2);
+                MolarMass = M);
   return(result)
 }
 # Substances=NULL;

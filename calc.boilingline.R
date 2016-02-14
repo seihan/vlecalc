@@ -1,7 +1,9 @@
-calc.boilingline = function(Substances=c(),
-                            Fractions=c(),
-                            Pressure=NULL,
+calc.boilingline = function(substances=c(),
+                            fractions=c(),
+                            pressure=NULL,
+                            ideal=FALSE,
                             UNIFAC=FALSE,
+                            open=FALSE,
                             verbose=FALSE){
   # calculate and plot the boilingline of multicomponent mixtures
   # load and define functions:
@@ -9,6 +11,8 @@ calc.boilingline = function(Substances=c(),
   source('calc.bubblepoint.T.R');
   source('sub.check.R');
   source('Antoine.P.R');
+  source('Antoine.T.R');
+  source('SRK.R');
   Percent = function(x, digits = 2, format = "f", ...) {
     paste0(formatC(100 * x, format = format, digits = digits, ...), "%")
   }
@@ -16,25 +20,87 @@ calc.boilingline = function(Substances=c(),
     Antoine.P(sublist[, 2], sublist[, 3], sublist[, 4], Temperature)
   }
   printf = function(...) cat(sprintf(...));
+#   subtbl = read.csv('Substances.Antoine-tbl.csv',sep=','); # load table
   e <- 1e-7  # accuracy
-  nos = length(Substances); # count number of substances
-  if(is.null(Pressure)){
+  nos = length(substances); # count number of substances
+  if(is.null(pressure)){
     stop('No pressure [Pa] specified. Abort.');
   }
   if (nos == 0){
     stop('No substance specified. Abort.');
   }
-  if (length(Fractions) != nos){ # check: N substances == N fractions
+  if (length(fractions) != nos){ # check: N substances == N fractions
     stop('Number of components differ their mole fractions. Abort.');
   }
   # check for mole fraction consistent (sum(xi = 1)?)
-  if (abs(1 - sum(Fractions)) > e){
+  if (abs(1 - sum(fractions)) > e){
     stop('Sum of mole fractions not equal to 1. Abort.');
   }
-  sublist = NULL
-  for (i in 1:length(Substances)){
-    tmp = sub.check(Substances[i])
-    sublist = rbind(sublist, tmp[1,])
+#   sublist = NULL;
+#   for (i in 1:length(Substances)){
+#     tmp = sub.check(Substances[i])
+#     sublist = rbind(sublist, tmp[1,])
+#     sublist[i,7] = calc.boiling.T(Substances[i], Pressure);
+#   }
+#   View(sublist)
+  Substances = rep(list(''), nos); # initiate the list of lists
+  for(i in 1:nos){
+    Substances[[i]] = Substance(substances[i]); # get properties
+    Substances[[i]]$Fraction = fractions[i]; # add fractions
+    A = Substances[[i]][[1]]$A[1];
+    B = Substances[[i]][[1]]$B[1];
+    C = Substances[[i]][[1]]$C[1];
+    Tsat = Antoine.T(A, B, C, pressure) # calc boiling temperature
+    Substances[[i]]$Tsat = Tsat;
+  }
+  names(Substances) = substances;
+  oSubstances = Substances[order(-sapply(Substances, function(tsat) tsat$Tsat))]; # sort by Tsat
+  M = sum(sapply(Substances, function(molarmass) molarmass$MolarMass)); # sum molar mass
+  print(M)
+  if(open){
+    
+  }
+  stop("Under construction");
+
+  if(open){
+    openSub = cbind(sublist,Fractions); # add fractions
+    openSub = openSub[order(-openSub$T.boil),]; # sort substances by boiling temperature
+    bubblepoint = calc.bubblepoint.T(Substances,Fractions,Pressure,UNIFAC=T)$Temperature;
+    boilline = NULL;
+    sortFrac = openSub$Fractions;
+    liquid = 1;
+    boilline = rbind(boilline, c(bubblepoint, (1 - liquid))); 
+    sortFrac=openSub$Fractions;
+    for(x in nos:3){
+      openSub = openSub[-x,]; # remove row_lightboiler
+      shrinkSub = c();
+      for (i in 1:nrow(openSub)){
+        shrinkSub = c(shrinkSub, strsplit(as.character(openSub$Substance[i]),' ')[[1]][1]);
+      }
+      shrinkFrac = openSub$Fractions;
+      shrinkFrac = shrinkFrac / sum(shrinkFrac);
+      bubblepoint = calc.bubblepoint.T(shrinkSub,shrinkFrac,Pressure,UNIFAC=T)$Temperature;
+      liquid = 1 - sum(sortFrac[x:nos])
+      boilline = rbind(boilline, c(bubblepoint, (1 - liquid)));
+    }
+    boilline = rbind(boilline, c(openSub$T.boil[1], 1));
+    print(boilline)
+    pdf(file='FACE5-open-n-closed-system-bl.pdf');
+    plot(c(0, 1), c(400, 700),
+         type='n', main='FACE#5',
+         xlab='evaporated fraction', ylab='T [K]');
+    points(boilline[,2], boilline[,1],pch=1);
+    lines(boilline[,2], boilline[,1], lwd=2);
+    F5exp = matrix(c(0, 450, 0.2, 460, 0.3, 465, 0.4, 490, 0.5, 495, 0.6, 500, 0.7, 520, 0.8, 530, 0.9, 550, 1, 580),
+                   ncol=2, byrow=T);
+    points(F5exp[,1], F5exp[,2], pch=8);
+    legend('topright' ,c('experiment',
+                         'simulation open-UNIFAC',
+                         'simulation closed-UNIFAC',
+                         'simulation closed-IDEAL'),
+           lty=c(0,1,2,3), pch=c(8,1,NA,NA), bty='n');
+#    dev.off();
+    result = boilline;
   }
   # non ideal solution
   if(UNIFAC){
@@ -54,7 +120,7 @@ calc.boilingline = function(Substances=c(),
     boilline = c()
     for(i in 1:steps){
       Pd = calc.dewpoint.P(Substances,Fractions,Trange[i])$Pressure;
-      Pb = calc.bubblepoint.P(Substances,Fractions,Trange[i]);
+      Pb = calc.bubblepoint.P(Substances,Fractions,Trange[i])$pressure;
       # steam check
       if((Pd < Pressure) && (Pressure < Pb)){
         if(verbose) printf('\nsteam');
@@ -63,7 +129,7 @@ calc.boilingline = function(Substances=c(),
         x = Fractions;
       }
       else if((Pressure > Pb) && (verbose)) printf('\nliquid');
-      if ((Pressure > Pd) && (verbose)) printf('\nvapor');
+      if ((Pressure < Pd) && (verbose)) printf('\nvapor');
     }
     if(verbose)printf('\n');
     boilline = matrix(boilline, ncol=2, byrow=T);
@@ -73,20 +139,20 @@ calc.boilingline = function(Substances=c(),
     maintitle = paste(c(Substances, 'boilingline.unifac'), collapse='-');
     subtitle = c('P =', Pressure, 'Pa');
     filename = paste(c(maintitle,'pdf'),collapse='.');
-    pdf(file=filename);
-    plot(c(0,1), c(T0,T100),
-         main=toupper(paste(maintitle, collapse='-')),
-         xlab='Evaporated fraction',ylab='T [K]',
-         sub=paste(subtitle, collapse=' '),
-         type='p');
-    lines(boilline[,2],boilline[,1],type='l',lwd=2);
-    dev.off();
+#    pdf(file=filename);
+#     plot(c(0,1), c(T0,T100),
+#          main=toupper(paste(maintitle, collapse='-')),
+#          xlab='Evaporated fraction',ylab='T [K]',
+#          sub=paste(subtitle, collapse=' '),
+#          type='p');
+   lines(boilline[,2],boilline[,1],lty=2,lwd=2);
+#    dev.off();
     T0100 = c(T0,T100); # T.bubble, T.dew
     result=list(BubbleAndDewpoint=T0100,
                 TemperatureToVapor=boilline);
   }
   # ideal solution
-  else{
+  if(ideal){
     # 1. run simulation to calculate bubblepoint temperature
     T0 = calc.bubblepoint.T(Substances, Fractions, Pressure)
     # 2. run simulation to calculate dewpoint temperature
@@ -107,7 +173,7 @@ calc.boilingline = function(Substances=c(),
         A[i, i] <- xf[i]; # fill the matrix
       }
       x = solve(A, b);  # solve the system
-      abs(abs(sum(x) - 1) - abs(sum(K * x) - 1));
+      abs(sum(x) - 1) + abs(sum(K * x) - 1); # return value
     }
     for (i in 1:steps){
       c = 0;
@@ -154,15 +220,15 @@ calc.boilingline = function(Substances=c(),
     maintitle = paste(c(Substances, 'boilingcurve'), collapse='-');
     subtitle = c('P =', Pressure, 'Pa');
     filename = paste(c(maintitle,'pdf'),collapse='.');
-    pdf(file=filename)
-    plot(c(0,1), c(400,700),
-#          main=toupper(paste(maintitle, collapse='-')),
-           main='FACE#5',
-         xlab='Evaporated fraction',ylab='T [K]',
-         sub=paste(subtitle, collapse=' '),
-         type='p')
-    lines(1-temLiquid[,2],temLiquid[,1],type='l',lwd=2);
-    dev.off();    
+#    pdf(file=filename)
+#     plot(c(0,1), c(400,700),
+# #          main=toupper(paste(maintitle, collapse='-')),
+#            main='FACE#5',
+#          xlab='Evaporated fraction',ylab='T [K]',
+#          sub=paste(subtitle, collapse=' '),
+#          type='p')
+   lines(1-temLiquid[,2],temLiquid[,1],lty=3,lwd=2);
+   dev.off();    
     result=list(BubbleAndDewpoint=T0100,
                 LiquidFractions=xList,
                 Iterations=cList,
