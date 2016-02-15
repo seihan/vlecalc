@@ -58,8 +58,3 @@ Substance = function(name){
                 MolarMass = M);
   return(result)
 }
-# Substances=NULL;
-# for(i in 1:2){
-#   Substances=list(Substances, Substance(subs[i]));
-# }
-# names(Substances) = name;

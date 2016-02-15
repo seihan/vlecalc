@@ -36,32 +36,13 @@ calc.boilingline = function(substances=c(),
   if (abs(1 - sum(fractions)) > e){
     stop('Sum of mole fractions not equal to 1. Abort.');
   }
-#   sublist = NULL;
-#   for (i in 1:length(Substances)){
-#     tmp = sub.check(Substances[i])
-#     sublist = rbind(sublist, tmp[1,])
-#     sublist[i,7] = calc.boiling.T(Substances[i], Pressure);
-#   }
-#   View(sublist)
-  Substances = rep(list(''), nos); # initiate the list of lists
-  for(i in 1:nos){
-    Substances[[i]] = Substance(substances[i]); # get properties
-    Substances[[i]]$Fraction = fractions[i]; # add fractions
-    A = Substances[[i]][[1]]$A[1];
-    B = Substances[[i]][[1]]$B[1];
-    C = Substances[[i]][[1]]$C[1];
-    Tsat = Antoine.T(A, B, C, pressure) # calc boiling temperature
-    Substances[[i]]$Tsat = Tsat;
+  sublist = NULL;
+  for (i in 1:length(Substances)){
+    tmp = sub.check(Substances[i])
+    sublist = rbind(sublist, tmp[1,])
+    sublist[i,7] = calc.boiling.T(Substances[i], Pressure);
   }
-  names(Substances) = substances;
-  oSubstances = Substances[order(-sapply(Substances, function(tsat) tsat$Tsat))]; # sort by Tsat
-  M = sum(sapply(Substances, function(molarmass) molarmass$MolarMass)); # sum molar mass
-  print(M)
-  if(open){
-    
-  }
-  stop("Under construction");
-
+  View(sublist)
   if(open){
     openSub = cbind(sublist,Fractions); # add fractions
     openSub = openSub[order(-openSub$T.boil),]; # sort substances by boiling temperature
