@@ -51,7 +51,8 @@ Substance = function(name){
     mass = append(mass, EleMass[grep(elements[i], EleMass$Element), ]$Mass);
   }
   M = sum(factors * mass);
-  result = list(Antoine = Antoine,
+  result = list(Formula = as.character(criticals$Formula),
+                Antoine = Antoine,
                 Ac = criticals$Ac,
                 Pc = criticals$Pc,
                 Tc = criticals$Tc,
