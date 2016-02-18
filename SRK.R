@@ -478,7 +478,7 @@ SRK = function(pressure=NULL,
                     abg$aij,
                     nos=nos); 
       S = phig / phil
-      if ((abs(S - 1) < 1e-4) || (c > 199)){break;}
+      if ((abs(S - 1) < 1e-4) || (c > 99)){break;}
       else{
         c = c + 1;
         temp = 0.1 * temperature * (S - 1) / S;
