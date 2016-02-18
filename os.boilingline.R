@@ -4,6 +4,8 @@ os.boilingline = function(substances=NULL,
   source('Substance.R');
   source('Antoine.P.R');
   source('Antoine.T.R');
+  source('UNIFAC.R');
+  source('UNIFAC.gen.R');
   source('SRK.R');
   Percent = function(x, digits = 2, format = "f", ...) {
     paste0(formatC(100 * x, format = format, digits = digits, ...), "%")
@@ -12,16 +14,12 @@ os.boilingline = function(substances=NULL,
     A=sapply(Substances, function(Ant) Ant$Antoine$A[1]);
     B=sapply(Substances, function(Ant) Ant$Antoine$B[1]);
     C=sapply(Substances, function(Ant) Ant$Antoine$C[1]);
-    fractions = sapply(Substances, function(frac) frac$fraction);
+    fractions = sapply(Substances, function(frac) frac$Fraction);
     Ps = Antoine.P(A, B, C, temperature);
   }
   printf = function(...) cat(sprintf(...));
-  objF = function(temperature, ...){
-    returnVal = abs(sum(fractions * Ps(temperature))- pressure);
-    return(returnVal)
-  }
-  ptm = proc.time();
-  e <- 1e-7  # accuracy
+  ptm = proc.time(); # count the calc. time
+  e = 1e-7;  # accuracy
   nos = length(substances); # count number of substances
   if(is.null(pressure)){
     stop('No pressure [Pa] specified. Abort.');
@@ -44,25 +42,31 @@ os.boilingline = function(substances=NULL,
     A = Substances[[i]]$Antoine$A[1];
     B = Substances[[i]]$Antoine$B[1];
     C = Substances[[i]]$Antoine$C[1];
-    Tsat = Antoine.T(A, B, C, pressure) # calc boiling temperature
+    Tsat = Antoine.T(A, B, C, pressure) # calc boiling temperature using Antoine coefficients
     Substances[[i]]$Tsat = Tsat;
+    Ac = Substances[[i]]$Ac;
+    Pc = Substances[[i]]$Pc;
+    Tc = Substances[[i]]$Tc;
+    TsatSRK = SRK(pressure, x=1, Ac=Ac, Pc=Pc, Tc=Tc); # calc boiling using cubic equation
+    Substances[[i]]$TsatSRK = TsatSRK$temperature;
   }
   names(Substances) = substances;
   Substances = Substances[order(-sapply(Substances, function(tsat) tsat$Tsat))]; # sort by Tsat
   print(Substances)
   m100 = sum(sapply(Substances, function(mass) mass$Mass)); # sum mass
-  printf('Mass = %3.3f g\n', m100);
+  #printf('Mass = %3.3f g\n', m100);
   vapratio = 0;
   temperatures = c();
+  temperaturesSRK = c();
   while(nos > 1){
     Tmin = Substances[[nos]]$Tsat; # lower limit
-    #Tmax = Substances[[1]]$Tsat; # upper limit
-    # temperature = optimize(f=objF, lower=Tmin, upper=Tmax, tol=e)[[1]];# ideal first guess
     temperature = Tmin
     fractions = sapply(Substances, function(frac) frac$Fraction);
-    #fractions = fractions / sum(fractions)
+    Ac = sapply(Substances, function(ac) ac$Ac);
+    Pc = sapply(Substances, function(pc) pc$Pc);
+    Tc = sapply(Substances, function(tc) tc$Tc);
     substances = names(Substances)
-    u = UNIFAC.gen(substances); # load or generate UNIFAC values
+    u = UNIFAC.gen(substances); # load UNIFAC values
     unu = u[[1]];
     aij = u[[2]];
     kR = 8.314; # universal gas constant
@@ -85,10 +89,12 @@ os.boilingline = function(substances=NULL,
       temperature = sum(x * Antoine.T(A, B, C, PsNew));
       c = c + 1;  # count the iteration 
     }
-    printf('Iterations = %3.0f, Temperature = %3.2f\n', c, temperature);
+    temp.SRK = SRK(pressure=pressure, x=x, Tc=Tc, Pc=Pc, Ac=Ac);
+    printf('Iterations = %3.0f, Temperature = %3.2f, Temp.SRK = %3.2f\n',
+           c, temperature, temp.SRK$temperature);
     Substances[[nos]] = NULL; # remove the lowboiler
     nos = length(Substances);
-    if(nos > 1){
+    if(nos > 1){ # apply mass conservation
       m = sum(sapply(Substances, function(mass) mass$Mass)); # sum molar mass
       liquid = m / m100 * 100;
       n = rep(0, nos);
@@ -107,16 +113,21 @@ os.boilingline = function(substances=NULL,
     vapor = 100 - liquid;
     vapratio = c(vapratio, vapor);
     temperatures = c(temperatures, temperature);
-    print(Substances)
+    temperaturesSRK = c(temperaturesSRK, temp.SRK$temperature);
   }
   temperatures = c(temperatures, Substances[[1]]$Tsat);
+  temperaturesSRK = c(temperaturesSRK, Substances[[1]]$TsatSRK);
   boilline = matrix(c(vapratio, temperatures), ncol=2)
-  duration = proc.time() - ptm; # calculation time
+  boillineSRK = matrix(c(vapratio, temperaturesSRK), ncol=2);
   print(boilline)
-  plot(vapratio, temperatures)
-  p = polyfit(vapratio, temperatures, 3); # post processing -> polynomial regression
-  xf = seq(0, 100, 1);
-  yf = polyval(p, xf);
-  lines(xf, yf, col="red");
-  print(duration[1])
+  print(boillineSRK)
+  duration = proc.time() - ptm; # calculation time
+  blp = polyfit(vapratio, temperatures, 3); # post processing -> polynomial regression
+  blpSRK = polyfit(vapratio, temperaturesSRK, 3);
+  #printf('\nCalculation takes %3.3f s', as.numeric(duration[1]))
+  plot(vapratio, temperaturesSRK);
+  points(vapratio, temperatures, pch=4);
+  lines(seq(0, 100, 1), polyval(p=blp, x=seq(0, 100, 1)), col='blue');
+  lines(seq(0, 100, 1), polyval(p=blpSRK, x=seq(0, 100, 1)), col='green');  
+  return(blp);
 }

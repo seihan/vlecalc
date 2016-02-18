@@ -124,7 +124,7 @@ SRK = function(pressure=NULL,
     Temp = log(P / Pc);
     Temp1 = 1 - Temp * 3 / (log(10) * (7 + 7 * Ac));
     temperature = Tc / Temp1;
-    return(temperature);
+    return(abs(temperature));
   }
   Kestimate = function(temperature,P,Tc,Pc,Ac)
   {
@@ -365,7 +365,6 @@ SRK = function(pressure=NULL,
       K = phil / phig;  # 5. calc. K = phi_l / phi_g, S = sum(x * K)
       x = y / K;
       S = sum(x);
-      print(S)
       if ((abs(S - 1) < e) || (c > 99)){break;}
       else{
         c = c + 1;
@@ -478,13 +477,11 @@ SRK = function(pressure=NULL,
                     abg$bi,
                     abg$aij,
                     nos=nos); 
-      S = abs(phil - phig);  # 5. calc. K = phi_l / phi_g, S = sum(x * K)
-      print(phil)
-      print(phig)
-      if ((S < e) || (c > 9)){break;}
+      S = phig / phil
+      if ((abs(S - 1) < 1e-4) || (c > 199)){break;}
       else{
         c = c + 1;
-        temp = 0.1 * temperature * (1 - S) / S;
+        temp = 0.1 * temperature * (S - 1) / S;
         temperature = temperature + temp;
       }
     }
@@ -495,7 +492,7 @@ SRK = function(pressure=NULL,
                   S=S,
                   iterations=c);
     return(result);
-  } # UNDER CONSTRUCTION
+  } # end calc.saturation.T
   if((is.null(P)) && (!is.null(temperature)) && (!is.null(x)) && (length(x) > 1)){ # bubblepoint pressure = f(T,x)
     return(calc.bubblepoint.P(temperature, x));
   }
