@@ -210,7 +210,7 @@ os.boilingline = function(substances=NULL,
   u = UNIFAC.gen(substances); # load UNIFAC values
   unu = u[[1]];
   aij = u[[2]];
-  for(r in 1:5){ # start model loop
+  for(r in 3:5){ # start model loop
     fractions = as.numeric(sapply(Substances, function(frac) frac$Fraction));
     x = fractions;
     temperatures = c(); # initiate temperature table
@@ -234,13 +234,13 @@ os.boilingline = function(substances=NULL,
         result = calc.bubbleSRK.T();
       }
       temperature = result$temperature;
-      if(mass < 10){
-        temp = length(temperatures);
-        if(temperature < temperatures[temp]){ # check for raising temperature
-         temperature = temperatures[temp]; # workaround to prevent something happen wich don't might happen
-         printf("\ncorrected!");
-        }
-      }
+      #if(mass < 10){
+       # temp = length(temperatures);
+      #  if(temperature < temperatures[temp]){ # check for raising temperature
+       #  temperature = temperatures[temp]; # workaround to prevent something happen wich don't might happen
+      #   printf("\ncorrected!");
+       # }
+      #}
       y = result$y; # molare vapor fractions
       Mm = as.numeric(sapply(Substances, function(molmass) molmass$MolarMass)); # get molare masses
       ym = abs(y * Mm / sum(y * Mm)); # convert molare vapor to mass fraction
@@ -278,11 +278,11 @@ os.boilingline = function(substances=NULL,
     for(i in (nos - 1):1){
       massstack[i,] = massstack[(i + 1),] + massstack[i,]; # sum masses -> build the stack
     }
-    filename=paste(c('FACE#1-osmasses-model-',r,'.pdf'), collapse='');
+    filename=paste(c('MIX#1-osmasses-model-',r,'.pdf'), collapse='');
     grays = gray.colors(nos);
     pdf(file=filename);
     plot(x = temperatures, y = massstack[1,],
-         main=paste(c('FACE#1\nopen system - model#', r), collapse=''),
+         main=paste(c('MIX1#1\nopen system - model#', r), collapse=''),
          xlab='T [K]',
          ylab='Substances progression [%]',
          sub=paste(subtitle, collapse=' '),
@@ -320,9 +320,9 @@ os.boilingline = function(substances=NULL,
                   BlSRK$temperature[temp3],
                   BlSRKU$temperature[temp4],
                   BlSRKpure$temperature[temp5]));
-  pdf(file='FACE1-osbl.pdf');
+  pdf(file='MIX#1-osbl.pdf');
   plot(c(0,100), c(mint0, maxt100),
-       main='FACE#1\nopen system',
+       main='MIX#1\nopen system',
        xlab='Evaporated fraction [%]',
        ylab='T [K]',
        sub=paste(subtitle, collapse=' '),
