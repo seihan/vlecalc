@@ -1,6 +1,7 @@
 os.boilingline = function(substances=NULL,
                           fractions=NULL,
                           pressure=NULL,
+                          mixname=NULL,
                           verbose=F){
   source('Substance.R');
   source('Antoine.P.R');
@@ -170,6 +171,10 @@ os.boilingline = function(substances=NULL,
   if (abs(1 - sum(fractions)) > e){
     stop('Sum of mole fractions not equal to 1. Abort.');
   }
+  if (is.null(mixname)){
+    warning('No name specified, named "unknown"');
+    mixname='unknown'
+  }
   subtitle = c('p =', pressure, 'Pa'); # subtitle for plotting 
   Substances = rep(list(''), nos); # initiate the list of lists
   for(i in 1:nos){ # collect substances properties
@@ -193,7 +198,7 @@ os.boilingline = function(substances=NULL,
   A = as.numeric(abc[1,]);
   B = as.numeric(abc[2,]);
   C = as.numeric(abc[3,]);
-  names(Substances) = substances;
+  names(Substances) = substances; # add the names
   Substances = Substances[order(-sapply(Substances, function(tsat) tsat$Tsat))]; # sort by Tsat
   m = sum(sapply(Substances, function(mass) mass$Fraction)); 
   masses = sapply(Substances, function(mass) mass$Mass);
@@ -210,7 +215,10 @@ os.boilingline = function(substances=NULL,
   u = UNIFAC.gen(substances); # load UNIFAC values
   unu = u[[1]];
   aij = u[[2]];
-  for(r in 3:5){ # start model loop
+  filename=paste(c(mixname,'-mass-progression.pdf'), collapse='');
+  pdf(file=filename);
+  par(mfrow=c(3,2), oma=c(4.5, 4, 4, 2.5), mar=rep(.1, 4), cex=0.7, las=1)
+  for(r in 1:5){ # start model loop
     fractions = as.numeric(sapply(Substances, function(frac) frac$Fraction));
     x = fractions;
     temperatures = c(); # initiate temperature table
@@ -228,19 +236,12 @@ os.boilingline = function(substances=NULL,
         result = SRK(pressure=pressure, x=x, Tc=Tc, Pc=Pc, Ac=Ac);
       } 
       if(r == 4){
-        result = calc.bubbleSRKU.T();
-      }
-      if(r == 5){
         result = calc.bubbleSRK.T();
       }
+      if(r == 5){
+        result = calc.bubbleSRKU.T();
+      }
       temperature = result$temperature;
-      #if(mass < 10){
-       # temp = length(temperatures);
-      #  if(temperature < temperatures[temp]){ # check for raising temperature
-       #  temperature = temperatures[temp]; # workaround to prevent something happen wich don't might happen
-      #   printf("\ncorrected!");
-       # }
-      #}
       y = result$y; # molare vapor fractions
       Mm = as.numeric(sapply(Substances, function(molmass) molmass$MolarMass)); # get molare masses
       ym = abs(y * Mm / sum(y * Mm)); # convert molare vapor to mass fraction
@@ -253,6 +254,20 @@ os.boilingline = function(substances=NULL,
       x = xm / Mm / sum(xm / Mm); # convert mass to molare fractions
       for(i in 1:nos){
         Substances[[i]]$Fraction = x[i]; # store new molare fractions
+      }
+      if(mass < 10){ # last points controll
+        temp = length(temperatures);
+        if(temperature < temperatures[temp]){ # check for raising temperature
+          warning('Model#', r, ' temperature from ', round(temperature,2), 'K to ',
+                  round(temperatures[temp],2), 'K corrected.');
+          temperature = temperatures[temp]; # workaround to prevent something happen wich don't might happen
+        }
+        temp = length(vapor);
+        if (round(vapor[temp], 0) == round(100 - mass, 0)){
+          warning('Model#', r, ' vapor from ', round(100 - mass,0), '% to ',
+                  round(101 - mass, 0),'% corrected.');
+          mass = mass - 1;
+        }
       }
       temperatures = c(temperatures, temperature); # store temperature
       vapor = c(vapor, 100 - mass); # store vapor
@@ -271,82 +286,121 @@ os.boilingline = function(substances=NULL,
                                temperature=temperatures);
     if(r == 3) BlSRK = list(vapor=vapor,
                             temperature=temperatures);
-    if(r == 4) BlSRKU = list(vapor=vapor,
-                             temperature=temperatures);
-    if(r == 5) BlSRKpure = list(vapor=vapor,
+    if(r == 4) BlSRKpure = list(vapor=vapor,
                                 temperature=temperatures);
+    if(r == 5) BlSRKU = list(vapor=vapor,
+                             temperature=temperatures);
     for(i in (nos - 1):1){
       massstack[i,] = massstack[(i + 1),] + massstack[i,]; # sum masses -> build the stack
     }
-    filename=paste(c('MIX#1-osmasses-model-',r,'.pdf'), collapse='');
     grays = gray.colors(nos);
-    pdf(file=filename);
-    plot(x = temperatures, y = massstack[1,],
-         main=paste(c('MIX1#1\nopen system - model#', r), collapse=''),
-         xlab='T [K]',
-         ylab='Substances progression [%]',
-         sub=paste(subtitle, collapse=' '),
-         type='n');  
-    grid(NULL,NULL, lty = 6);
-    legend('topright', legend=substances,
-           col=grays,
-           lwd=2,
-           bty='n', cex=0.9);
+    if((r %% 2) && (r != 5)){ # alternating plotting
+      plot(x = temperatures, y = massstack[1,],
+           type='n',
+           ann=FALSE,
+           xaxt='n');
+      legend('topright',
+             legend=paste(c('model#',r),collapse = ''),
+             bty='n',
+             cex=0.9);
+    }
+    if(!(r %% 2)){
+      plot(x = temperatures, y = massstack[1,],
+           type='n',
+           ann=FALSE,
+           xaxt='n',
+           yaxt='n');
+      legend('topright',
+             legend=paste(c('model#',r),collapse = ''),
+             bty='n',
+             cex=0.9);
+    }
+    if(r == 5){
+      plot(x = temperatures, y = massstack[1,], # empty bottom left plot
+           type='n',
+           ann=FALSE);
+      legend('topleft', 
+             legend=substances,
+             col=grays,
+             lwd=2,
+             bty='n', cex=0.8);
+      legend('topright',
+             legend=c('model#1 Antoine pure',
+                      'model#2 Antoine UNIFAC',
+                      'model#3 SRK',
+                      'model#4 SRK pure',
+                      'model#5 SRK UNIFAC'),
+             bty='n',
+             cex=0.8);
+      axis(1, at=c(round(temperatures[1],0),round(Substances[[1]]$Tsat,0)));
+      plot(x = temperatures, y = massstack[1,],
+           type='n',
+           ann=FALSE,
+           yaxt='n');
+      legend('topright',
+             legend=paste(c('model#',r),collapse = ''),
+             bty='n',
+             cex=0.9);
+      axis(1, at=c(round(temperatures[1],0),round(Substances[[1]]$Tsat,0)));
+    }
     for(i in 1:nos){
       lines(x = temperatures, y = massstack[i,], col=grays[i]);
       xx = c(temperatures, rev(temperatures));
       yy = c(massstack[i,], rep(0,101));
       polygon(xx, yy, col=grays[i], border=NA);
     }
-    dev.off();
     Substances = Suborg; # reset substances list
     masses = sapply(Substances, function(mass) mass$Mass);
     mass = sum(masses);             
   } # end model loop -> start post processing
+  title(paste(c(mixname,'\nProgression Curves'), collapse=''), outer=TRUE, cex=0.8)
+  mtext(paste(c('T [K]\n',subtitle), collapse=' '), 1, 3, outer=TRUE,cex=0.8) # x-axis
+  mtext('Substances progression [%]', 2, 3, outer=TRUE, las=0, cex=0.8) # y-axis
+  dev.off();
   duration = proc.time() - ptm; # calculation time
   printf('\nCalculation takes %3.3f s\n', as.numeric(duration[1]));
   temp1 = length(BlAntoine$temperature);
   temp2 = length(BlUNIFAC$temperature);
   temp3 = length(BlSRK$temperature);
-  temp4 = length(BlSRKU$temperature);
-  temp5 = length(BlSRKpure$temperature);
+  temp4 = length(BlSRKpure$temperature);
+  temp5 = length(BlSRKU$temperature);
   mint0 = min(c(BlAntoine$temperature[1],
                 BlUNIFAC$temperature[1],
                 BlSRK$temperature[1],
-                BlSRKU$temperature[1],
-                BlSRKpure$temperature[1]));
+                BlSRKpure$temperature[1],
+                BlSRKU$temperature[1]));
   maxt100 = max(c(BlAntoine$temperature[temp1],
                   BlUNIFAC$temperature[temp2],
                   BlSRK$temperature[temp3],
-                  BlSRKU$temperature[temp4],
-                  BlSRKpure$temperature[temp5]));
-  pdf(file='MIX#1-osbl.pdf');
+                  BlSRKpure$temperature[temp4],
+                  BlSRKU$temperature[temp5]));
+  pdf(file=paste(c(mixname,'-osbl.pdf'),collapse=''));
   plot(c(0,100), c(mint0, maxt100),
-       main='MIX#1\nopen system',
+       main=paste(c(mixname,'\nDistillation Curves'),collapse = ''),
        xlab='Evaporated fraction [%]',
        ylab='T [K]',
        sub=paste(subtitle, collapse=' '),
        type='n');
   grid(NULL,NULL, lty = 6);
-  legend('topleft', legend=c('Antoine',
+  legend('topleft', legend=c('Antoine pure',
                              'Antoine UNIFAC',
                              'SRK',
-                             'SRK UNIFAC',
-                             'SRK pure'),
+                             'SRK pure',
+                             'SRK UNIFAC'),
          lty=c(1,2,6,4,8),
-         col=c('black', 'gray8', 'darkblue', 'darkgreen', 'maroon'),
+         col=c('black', 'red', 'darkblue', 'darkgreen', 'maroon'),
          lwd=2,
          bty='n', cex=0.9)
   lines(BlAntoine$vapor, BlAntoine$temperature, lwd=3);
   lines(BlUNIFAC$vapor, BlUNIFAC$temperature, lty=2, lwd=3, col='red');
   lines(BlSRK$vapor, BlSRK$temperature, lty=6, lwd=3, col='darkblue');
-  lines(BlSRKU$vapor, BlSRKU$temperature, lty=4, lwd=3, col='darkgreen');
-  lines(BlSRKpure$vapor, BlSRKpure$temperature, lty=8, lwd=3, col='maroon');
+  lines(BlSRKpure$vapor, BlSRKpure$temperature, lty=8, lwd=3, col='darkgreen');
+  lines(BlSRKU$vapor, BlSRKU$temperature, lty=4, lwd=3, col='maroon');
   dev.off();
   result = list(Antoine=BlAntoine,
                 UNIFAC=BlUNIFAC,
                 SRK=BlSRK,
-                SRKUNIFAC=BlSRKU,
-                SRKpure=BlSRKpure);
+                SRKpure=BlSRKpure,
+                SRKUNIFAC=BlSRKU);
   return(result);
 }
