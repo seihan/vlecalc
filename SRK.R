@@ -60,7 +60,7 @@ SRK = function(pressure=NULL,
     }
     return(result)
   } # end absrk
-  VOLSRK = function(phase=NULL,
+  volsrk = function(phase=NULL,
                     temperature=NULL,
                     pressure=NULL,
                     a=NULL,
@@ -92,7 +92,7 @@ SRK = function(pressure=NULL,
     }
     volsrk = v + R * temperature / 3 / pressure;
     return(volsrk)
-  } # end VOLSRK
+  } # end volsrk
   PHISRK = function(temperature=NULL,
                     pressure=NULL,
                     v=NULL,
@@ -177,7 +177,7 @@ SRK = function(pressure=NULL,
                 x,
                 nos=nos);
     repeat{
-      vl = VOLSRK(phase=1,    # 2. calc. v, phi liquid @ P
+      vl = volsrk(phase=1,    # 2. calc. v, phi liquid @ P
                   temperature,
                   pressure,
                   abl$a,
@@ -194,7 +194,7 @@ SRK = function(pressure=NULL,
       abg = absrk(temperature, # 3. calc. a, b gas phase
                   y,
                   nos);
-      vg = VOLSRK(phase=-1,  # 4. calc. v, phi gas @ P
+      vg = volsrk(phase=-1,  # 4. calc. v, phi gas @ P
                   temperature,
                   pressure,
                   abg$a,
@@ -237,7 +237,7 @@ SRK = function(pressure=NULL,
       abl = absrk(temperature, 
                   x,
                   nos);# 1. calc. a, b liquid phase
-      vl = VOLSRK(phase=1,    # 2. calc. v, phi liquid @ P
+      vl = volsrk(phase=1,    # 2. calc. v, phi liquid @ P
                   temperature,
                   pressure,
                   abl$a,
@@ -254,7 +254,7 @@ SRK = function(pressure=NULL,
       abg = absrk(temperature, # 3. calc. a, b gas phase
                   y,
                   nos);
-      vg = VOLSRK(phase=-1,  # 4. calc. v, phi gas @ P
+      vg = volsrk(phase=-1,  # 4. calc. v, phi gas @ P
                   temperature,
                   pressure,
                   abg$a,
@@ -298,7 +298,7 @@ SRK = function(pressure=NULL,
                 y,
                 nos);
     repeat{
-      vg = VOLSRK(phase=-1,    # 2. calc. v, phi liquid @ P
+      vg = volsrk(phase=-1,    # 2. calc. v, phi liquid @ P
                   temperature,
                   pressure,
                   abg$a,
@@ -315,7 +315,7 @@ SRK = function(pressure=NULL,
       abl = absrk(temperature, # 3. calc. a, b gas phase
                   x,
                   nos);
-      vl = VOLSRK(phase=1,  # 4. calc. v, phi gas @ P
+      vl = volsrk(phase=1,  # 4. calc. v, phi gas @ P
                   temperature,
                   pressure,
                   abl$a,
@@ -361,7 +361,7 @@ SRK = function(pressure=NULL,
       abl = absrk(temperature, 
                   x,
                   nos);# 1. calc. a, b liquid phase
-      vl = VOLSRK(phase=1,    # 2. calc. v, phi liquid @ P
+      vl = volsrk(phase=1,    # 2. calc. v, phi liquid @ P
                   temperature,
                   pressure,
                   abl$a,
@@ -378,7 +378,7 @@ SRK = function(pressure=NULL,
       abg = absrk(temperature, # 3. calc. a, b gas phase
                   y,
                   nos);
-      vg = VOLSRK(phase=-1,  # 4. calc. v, phi gas @ P
+      vg = volsrk(phase=-1,  # 4. calc. v, phi gas @ P
                   temperature,
                   pressure,
                   abg$a,
@@ -420,7 +420,7 @@ SRK = function(pressure=NULL,
                 x,
                 nos);
     repeat{
-      vl = VOLSRK(phase=1,    # 2. calc. v, phi liquid @ P
+      vl = volsrk(phase=1,    # 2. calc. v, phi liquid @ P
                   temperature,
                   pressure,
                   abl$a,
@@ -437,7 +437,7 @@ SRK = function(pressure=NULL,
       abg = absrk(temperature, # 3. calc. a, b gas phase
                   y,
                   nos);
-      vg = VOLSRK(phase=-1,  # 4. calc. v, phi gas @ P
+      vg = volsrk(phase=-1,  # 4. calc. v, phi gas @ P
                   temperature,
                   pressure,
                   abg$a,
@@ -475,7 +475,7 @@ SRK = function(pressure=NULL,
       abl = absrk(temperature, 
                   x=x,
                   nos=nos);# 1. calc. a, b liquid phase
-      vl = VOLSRK(phase=1,    # 2. calc. v, phi liquid @ P
+      vl = volsrk(phase=1,    # 2. calc. v, phi liquid @ P
                   temperature,
                   pressure,
                   abl$a,
@@ -492,7 +492,7 @@ SRK = function(pressure=NULL,
       abg = absrk(temperature, # 3. calc. a, b gas phase
                   y,
                   nos);
-      vg = VOLSRK(phase=-1,  # 4. calc. v, phi gas @ P
+      vg = volsrk(phase=-1,  # 4. calc. v, phi gas @ P
                   temperature,
                   pressure,
                   abg$a,
@@ -528,7 +528,7 @@ SRK = function(pressure=NULL,
     abl = absrk(temperature,
                 x,
                 nos=nos);
-    vl = VOLSRK(phase=1,    # 2. calc. v, phi liquid @ P
+    vl = volsrk(phase=1,    # 2. calc. v, phi liquid @ P
                 temperature,
                 pressure,
                 abl$a,
@@ -545,7 +545,7 @@ SRK = function(pressure=NULL,
     abg = absrk(temperature, # 3. calc. a, b gas phase
                 y,
                 nos);
-    vg = VOLSRK(phase=-1,  # 4. calc. v, phi gas @ P
+    vg = volsrk(phase=-1,  # 4. calc. v, phi gas @ P
                 temperature,
                 pressure,
                 abg$a,
@@ -570,7 +570,7 @@ SRK = function(pressure=NULL,
     abl = absrk(temperature,
                 x,
                 nos=nos);
-    vl = VOLSRK(phase=1,    # 2. calc. v, phi liquid @ P
+    vl = volsrk(phase=1,    # 2. calc. v, phi liquid @ P
                 temperature,
                 pressure,
                 abl$a,
