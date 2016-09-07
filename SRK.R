@@ -11,7 +11,7 @@ SRK = function(pressure=NULL,
   R = 0.0831433;
   PI = 3.141592653589793;
   e = 1e-7; # accuracy
-  ABSRK = function(temperature=NULL,
+  absrk = function(temperature=NULL,
                    x=NULL, 
                    nos=NULL, ...){
     if(is.null(temperature))stop('temperature = NULL')
@@ -59,7 +59,7 @@ SRK = function(pressure=NULL,
                     b = b);
     }
     return(result)
-  } # end ABSRK
+  } # end absrk
   VOLSRK = function(phase=NULL,
                     temperature=NULL,
                     pressure=NULL,
@@ -173,7 +173,7 @@ SRK = function(pressure=NULL,
     nos = length(x); # number of substances
     c = 0; # iteration control
     # 1. calc. a, b liquid phase
-    abl = ABSRK(temperature,
+    abl = absrk(temperature,
                 x,
                 nos=nos);
     repeat{
@@ -191,7 +191,7 @@ SRK = function(pressure=NULL,
                     abl$bi,
                     abl$aij,
                     nos=nos);
-      abg = ABSRK(temperature, # 3. calc. a, b gas phase
+      abg = absrk(temperature, # 3. calc. a, b gas phase
                   y,
                   nos);
       vg = VOLSRK(phase=-1,  # 4. calc. v, phi gas @ P
@@ -234,7 +234,7 @@ SRK = function(pressure=NULL,
     nos = length(x); # number of substances
     c = 0;
     repeat{
-      abl = ABSRK(temperature, 
+      abl = absrk(temperature, 
                   x,
                   nos);# 1. calc. a, b liquid phase
       vl = VOLSRK(phase=1,    # 2. calc. v, phi liquid @ P
@@ -251,7 +251,7 @@ SRK = function(pressure=NULL,
                     abl$bi,
                     abl$aij,
                     nos=nos);
-      abg = ABSRK(temperature, # 3. calc. a, b gas phase
+      abg = absrk(temperature, # 3. calc. a, b gas phase
                   y,
                   nos);
       vg = VOLSRK(phase=-1,  # 4. calc. v, phi gas @ P
@@ -294,7 +294,7 @@ SRK = function(pressure=NULL,
     x = y / Kestimate(temperature, pressure, Tc, Pc, Ac);
     c = 0; # iteration control
     # 1. calc. a, b liquid phase
-    abg = ABSRK(temperature,
+    abg = absrk(temperature,
                 y,
                 nos);
     repeat{
@@ -312,7 +312,7 @@ SRK = function(pressure=NULL,
                     abg$bi,
                     abg$aij,
                     nos=nos);
-      abl = ABSRK(temperature, # 3. calc. a, b gas phase
+      abl = absrk(temperature, # 3. calc. a, b gas phase
                   x,
                   nos);
       vl = VOLSRK(phase=1,  # 4. calc. v, phi gas @ P
@@ -358,7 +358,7 @@ SRK = function(pressure=NULL,
     x = x / sum(x)
     c = 0;
     repeat{
-      abl = ABSRK(temperature, 
+      abl = absrk(temperature, 
                   x,
                   nos);# 1. calc. a, b liquid phase
       vl = VOLSRK(phase=1,    # 2. calc. v, phi liquid @ P
@@ -375,7 +375,7 @@ SRK = function(pressure=NULL,
                     abl$bi,
                     abl$aij,
                     nos=nos);
-      abg = ABSRK(temperature, # 3. calc. a, b gas phase
+      abg = absrk(temperature, # 3. calc. a, b gas phase
                   y,
                   nos);
       vg = VOLSRK(phase=-1,  # 4. calc. v, phi gas @ P
@@ -416,7 +416,7 @@ SRK = function(pressure=NULL,
     pressure= Pestimate(temperature, Tc, Pc, Ac);
     nos = 1; # number of substances
     c = 0; # iteration control
-    abl = ABSRK(temperature, # 1. calc. a, b liquid phase
+    abl = absrk(temperature, # 1. calc. a, b liquid phase
                 x,
                 nos);
     repeat{
@@ -434,7 +434,7 @@ SRK = function(pressure=NULL,
                     abl$bi,
                     abl$aij,
                     nos=nos);
-      abg = ABSRK(temperature, # 3. calc. a, b gas phase
+      abg = absrk(temperature, # 3. calc. a, b gas phase
                   y,
                   nos);
       vg = VOLSRK(phase=-1,  # 4. calc. v, phi gas @ P
@@ -472,7 +472,7 @@ SRK = function(pressure=NULL,
     nos = length(x); # number of substances
     c = 0;
     repeat{
-      abl = ABSRK(temperature, 
+      abl = absrk(temperature, 
                   x=x,
                   nos=nos);# 1. calc. a, b liquid phase
       vl = VOLSRK(phase=1,    # 2. calc. v, phi liquid @ P
@@ -489,7 +489,7 @@ SRK = function(pressure=NULL,
                     abl$bi,
                     abl$aij,
                     nos=nos);
-      abg = ABSRK(temperature, # 3. calc. a, b gas phase
+      abg = absrk(temperature, # 3. calc. a, b gas phase
                   y,
                   nos);
       vg = VOLSRK(phase=-1,  # 4. calc. v, phi gas @ P
@@ -525,7 +525,7 @@ SRK = function(pressure=NULL,
   calc.y = function(temperature, pressure, x, ...){
    nos = length(x); # number of substances
     # 1. calc. a, b liquid phase
-    abl = ABSRK(temperature,
+    abl = absrk(temperature,
                 x,
                 nos=nos);
     vl = VOLSRK(phase=1,    # 2. calc. v, phi liquid @ P
@@ -542,7 +542,7 @@ SRK = function(pressure=NULL,
                   abl$bi,
                   abl$aij,
                   nos=nos);
-    abg = ABSRK(temperature, # 3. calc. a, b gas phase
+    abg = absrk(temperature, # 3. calc. a, b gas phase
                 y,
                 nos);
     vg = VOLSRK(phase=-1,  # 4. calc. v, phi gas @ P
@@ -567,7 +567,7 @@ SRK = function(pressure=NULL,
   calc.phi = function(temperature, pressure, x, ...){
     nos = length(x); # number of substances
     # 1. calc. a, b liquid phase
-    abl = ABSRK(temperature,
+    abl = absrk(temperature,
                 x,
                 nos=nos);
     vl = VOLSRK(phase=1,    # 2. calc. v, phi liquid @ P
