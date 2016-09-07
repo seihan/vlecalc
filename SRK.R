@@ -120,7 +120,13 @@ SRK = function(pressure=NULL,
     }
     return(phi);
   } # end phisrk
-  HSRK = function(...){
+  hsrk = function(temperature=NULL,
+                  pressure=NULL,
+                  x=NULL,
+                  a=NULL,
+                  am=NULL,
+                  aij=NULL,
+                  alpha=NULL, ...){
     h = 0;
     for(i in 1:nos){
       h1 = am / 2 / sqrt(Tc[i*alpha[i]]);
@@ -131,8 +137,10 @@ SRK = function(pressure=NULL,
     h = pressure * v * - R * temperature - (a + sqrt(temperature) * h) * log(1 + b / v) / b;
     h = h * 100;
     return(h);
-  } # end HSRK
-  ssrk = function(...){
+  } # end hsrk
+  ssrk = function(temperature,
+                  pressure,
+                  ...){
     s = 0;
     for(i in 1:nos){
       s1 = am[i] / sqrt(temperature * Tc[i] * alpha[i]);
@@ -146,23 +154,23 @@ SRK = function(pressure=NULL,
   } # end ssrk
   Pestimate = function(temperature,Tc,Pc,Ac)
   {
-    Temp = log(Pc);
-    Temp1 = log(10) * (1 - Tc / temperature) * (7 + 7 * Ac) / 3;
-    pressure= exp(Temp + Temp1);
+    temp = log(Pc);
+    temp1 = log(10) * (1 - Tc / temperature) * (7 + 7 * Ac) / 3;
+    pressure= exp(temp + temp1);
     return(pressure);
   }
   Testimate = function(pressure,Tc,Pc,Ac)
   {
-    Temp = log(pressure/ Pc);
-    Temp1 = 1 - Temp * 3 / (log(10) * (7 + 7 * Ac));
-    temperature = Tc / Temp1;
+    temp = log(pressure/ Pc);
+    temp1 = 1 - temp * 3 / (log(10) * (7 + 7 * Ac));
+    temperature = Tc / temp1;
     return(abs(temperature));
   }
   Kestimate = function(temperature,pressure,Tc,Pc,Ac)
   {
-    Temp = log(Pc / pressure);
-    Temp1 = log(10) * (1 - Tc / temperature) * (7 + 7 * Ac) / 3;
-    K = exp(Temp + Temp1);
+    temp = log(Pc / pressure);
+    temp1 = log(10) * (1 - Tc / temperature) * (7 + 7 * Ac) / 3;
+    K = exp(temp + temp1);
     return(K);
   }
   calc.bubblepoint.P = function(temperature, x, ...){
@@ -215,7 +223,6 @@ SRK = function(pressure=NULL,
         c = c + 1;
         pressure = S * pressure;
         y = (K * x) / S;
-   #     y = y / sum(y);
       }
     }
     result = list(pressure=pressure*1e+5,
