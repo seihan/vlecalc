@@ -5,7 +5,8 @@ SRK = function(pressure=NULL,
                Tc=NULL, # T critical [K]
                Pc=NULL, # P critical [bar]
                Ac=NULL, # acentric factor
-               wij=NULL){# binary interaction parameter
+               wij=NULL,# binary interaction parameter
+               hetero=F){
   P = pressure;
   R = 0.0831433;
   PI = 3.141592653589793;
@@ -35,7 +36,14 @@ SRK = function(pressure=NULL,
                     b = b);
     }
     else{
-      if(is.null(wij)) wij = matrix(0.01, nos, nos); # binary interaction parameter k12
+      if(is.null(wij)){
+        wij = matrix(0.01, nos, nos); # binary interaction parameter k12
+      }
+      else{
+        temp = wij
+        wij = matrix(0, nos, nos);
+        wij[1,2] = temp;
+      }
       for(i in 1:(nos-1)){
         for(j in (i+1):nos){
           aij[i,j] = sqrt(aij[i,i] * aij[j,j]) * (1 - wij[i,j]);
@@ -112,6 +120,30 @@ SRK = function(pressure=NULL,
     }
     return(phi);
   } # end PHISRK
+  HSRK = function(...){
+    h = 0;
+    for(i in 1:nos){
+      h1 = am / 2 / sqrt(Tc[i*alpha[i]]);
+      for(j in 1:nos){
+        h = h + x[i] * x[j] * aij[i,j] * (h1 + am[j] / 2 / sqrt(Tc[j] * alpha[j]))
+      }
+    }
+    h = pressure * v * - R * temperature - (a + sqrt(temperature) * h) * log(1 + b / v) / b;
+    h = h * 100;
+    return(h);
+  } # end HSRK
+  ssrk = function(...){
+    s = 0;
+    for(i in 1:nos){
+      s1 = am[i] / sqrt(temperature * Tc[i] * alpha[i]);
+      for(j in 1:nos){
+        s = s + x[i] * x[j] * aij[i,j] * (s1 + am[j] / sqrt(temperature * Tc[j] * alpha[j]));
+      }
+    }
+    s = R * log(1 - b / v) - s / 2 / b * log(1 + b / v) + R * log(v * pressure / R / temperature);
+    s = s * 100;
+    return(s);
+  } # end ssrk
   Pestimate = function(temperature,Tc,Pc,Ac)
   {
     Temp = log(Pc);
@@ -183,7 +215,7 @@ SRK = function(pressure=NULL,
         c = c + 1;
         P = S * P;
         y = (K * x) / S;
-        y = y / sum(y);
+   #     y = y / sum(y);
       }
     }
     result = list(pressure=P*1e+5,
@@ -493,6 +525,73 @@ SRK = function(pressure=NULL,
                   iterations=c);
     return(result);
   } # end calc.saturation.T
+  calc.y = function(temperature, P, x, ...){
+    P = P * 1e-5;
+    nos = length(x); # number of substances
+    # 1. calc. a, b liquid phase
+    abl = ABSRK(temperature,
+                x,
+                nos=nos);
+    vl = VOLSRK(phase=1,    # 2. calc. v, phi liquid @ P
+                temperature,
+                P,
+                abl$a,
+                abl$b);
+    phil = PHISRK(temperature,
+                  P,
+                  vl,
+                  x,
+                  abl$a,
+                  abl$b,
+                  abl$bi,
+                  abl$aij,
+                  nos=nos);
+    abg = ABSRK(temperature, # 3. calc. a, b gas phase
+                y,
+                nos);
+    vg = VOLSRK(phase=-1,  # 4. calc. v, phi gas @ P
+                temperature,
+                P,
+                abg$a,
+                abg$b);
+    phig = PHISRK(temperature, 
+                  P,
+                  vg,
+                  y,
+                  abg$a,
+                  abg$b,
+                  abg$bi,
+                  abg$aij,
+                  nos=nos); 
+    result = list(y=y,
+                  phil=phil,
+                  phig=phig);
+    return(result);
+  } # end calc.y
+  calc.phi = function(temperature, P, x, ...){
+    P = P * 1e-5;
+    nos = length(x); # number of substances
+    # 1. calc. a, b liquid phase
+    abl = ABSRK(temperature,
+                x,
+                nos=nos);
+    vl = VOLSRK(phase=1,    # 2. calc. v, phi liquid @ P
+                temperature,
+                P,
+                abl$a,
+                abl$b);
+    phil = PHISRK(temperature,
+                  P,
+                  vl,
+                  x,
+                  abl$a,
+                  abl$b,
+                  abl$bi,
+                  abl$aij,
+                  nos=nos);
+    result = phil;                
+    return(result);
+  }
   if((is.null(P)) && (!is.null(temperature)) && (!is.null(x)) && (length(x) > 1)){ # bubblepoint pressure = f(T,x)
     return(calc.bubblepoint.P(temperature, x));
   }
@@ -518,5 +617,11 @@ SRK = function(pressure=NULL,
   if((length(x) == 1) && (is.null(temperature)) && (!is.null(P)) && (is.null(y))){ # saturation temperature calculation
     y = 1;
     return(calc.saturation.T(P, x));
+  }
+  if((!is.null(P)) && (!is.null(temperature)) && (length(x) > 1) && (hetero)){
+    return(calc.phi(temperature, P, x));
+  }
+  if((!is.null(P)) && (!is.null(temperature)) && (!is.null(x)) && (length(x) > 1)){
+    return(calc.y(temperature, P, x));
   }
 }
