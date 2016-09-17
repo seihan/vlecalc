@@ -23,7 +23,7 @@ os.boilingline = function(substances=NULL,
   PsSRK = function(temperature, ...){
     ps = rep(0, nos);
     for(i in 1:nos){
-      ps[i] = SRK(temperature=temperature,
+      ps[i] = SRK(temperature=temperature, method = 'ps',
                   x=1, Ac=Ac[i], Pc=Pc[i], Tc=Tc[i])$pressure;
     }
     return(ps)
@@ -31,7 +31,7 @@ os.boilingline = function(substances=NULL,
   TsSRK = function(pressure, ...){
     ts = rep(0, nos);
     for(i in 1:nos){
-      ts[i] = SRK(pressure=pressure,
+      ts[i] = SRK(pressure=pressure, method = 'ts',
                   x=1, Ac=Ac[i], Pc=Pc[i], Tc=Tc[i])$temperature;
     }
     return(ts)
@@ -126,34 +126,6 @@ os.boilingline = function(substances=NULL,
                   y=abs(y));
     return(result);
   }
-  calc.bubble.hetero.T = function(...){
-    ts = TsAntoine(pressure);
-    temperature = sum(x * ts);
-    phi = rep(1, nos);
-    p = pressure;
-    c = 1;
-    while(c < 400){
-      pformer = p;
-      act = UNIFAC(Fractions=x, unu=unu, aij=aij, Temperature=temperature);
-      ps = PsAntoine(temperature);
-      p = sum(phi * act * x * ps);
-      y = phi * act * x * ps / p;
-      phi = SRK(pressure=p, temperature=temperature, x=x, Tc=Tc, Pc=Pc, Ac=Ac, hetero=T);
-      rat = p / pressure; 
-      diff = (abs(p - pformer));
-      if ((c != 1) && (abs(1 - rat) < 1e-4)){break;}
-      else{
-        c = c + 1;
-        temp = 0.1 * temperature * (1 - rat) / rat;
-        temperature = temperature + temp;
-      }
-    }
-    if(c == 400) printf('Warning: Iteration limit (hetero). Calculated pressure = %3.3f Pa.\n', p)
-    result = list(temperature=temperature,
-                  y=y,
-                  iterations=c);
-    return(result);
-  }
   printf = function(...) cat(sprintf(...));
   ptm = proc.time(); # count the calc. time
   e = 1e-7;  # accuracy
@@ -182,7 +154,7 @@ os.boilingline = function(substances=NULL,
     Substances[[i]]$MassFraction = fractions[i];
     Substances[[i]]$Mass = fractions[i] * 100;
     Substances[[i]]$Fraction = as.numeric(fractions[i] /
-                                            Substances[[i]]$MolarMass); # temporary value
+                                            Substances[[i]]$MolareMass); # temporary value
     A = Substances[[i]]$Antoine$A[1];
     B = Substances[[i]]$Antoine$B[1];
     C = Substances[[i]]$Antoine$C[1];
@@ -191,7 +163,7 @@ os.boilingline = function(substances=NULL,
     Ac = Substances[[i]]$Ac;
     Pc = Substances[[i]]$Pc;
     Tc = Substances[[i]]$Tc;
-    TsatSRK = SRK(pressure, x=1, Ac=Ac, Pc=Pc, Tc=Tc); # calc boiling using cubic equation
+    TsatSRK = SRK(pressure, x=1, Ac=Ac, Pc=Pc, Tc=Tc, method = 'ts'); # calc boiling using cubic equation
     Substances[[i]]$TsatSRK = TsatSRK$temperature; 
   }
   abc=sapply(Substances, function(abc) abc$Antoine[1,1:3]);
@@ -204,8 +176,8 @@ os.boilingline = function(substances=NULL,
   masses = sapply(Substances, function(mass) mass$Mass);
   mass = sum(masses)
   for(i in 1:nos){
-    Substances[[i]]$MolarAmount = as.numeric(Substances[[i]]$Fraction / m);
-    Substances[[i]]$Fraction = as.numeric(Substances[[i]]$MolarAmount);  
+    Substances[[i]]$MolareAmount = as.numeric(Substances[[i]]$Fraction / m);
+    Substances[[i]]$Fraction = as.numeric(Substances[[i]]$MolareAmount);  
   }
   Suborg = Substances;
   Ac = sapply(Substances, function(ac) ac$Ac);
@@ -233,7 +205,7 @@ os.boilingline = function(substances=NULL,
         result = calc.bubbleUNIFAC.T();
       }
       if(r == 3){
-        result = SRK(pressure=pressure, x=x, Tc=Tc, Pc=Pc, Ac=Ac);
+        result = SRK(pressure=pressure, x=x, Tc=Tc, Pc=Pc, Ac=Ac, method = 'bubbleT');
       } 
       if(r == 4){
         result = calc.bubbleSRK.T();
@@ -243,7 +215,7 @@ os.boilingline = function(substances=NULL,
       }
       temperature = result$temperature;
       y = result$y; # molare vapor fractions
-      Mm = as.numeric(sapply(Substances, function(molmass) molmass$MolarMass)); # get molare masses
+      Mm = as.numeric(sapply(Substances, function(molmass) molmass$MolareMass)); # get molare masses
       ym = abs(y * Mm / sum(y * Mm)); # convert molare vapor to mass fraction
       for(i in 1:nos){
         Substances[[i]]$Mass = round(abs(as.numeric(Substances[[i]]$Mass - ym[i])), 9); # substract 1g vapor

@@ -91,7 +91,7 @@ cs.boilingline = function(substances=NULL,
   PsSRK = function(temperature, ...){
     ps = rep(0, nos);
     for(i in 1:nos){
-      ps[i] = SRK(temperature=temperature,
+      ps[i] = SRK(temperature=temperature, method = 'ps',
                   x=1, Ac=Ac[i], Pc=Pc[i], Tc=Tc[i])$pressure;
     }
     return(ps)
@@ -99,7 +99,7 @@ cs.boilingline = function(substances=NULL,
   TsSRK = function(pressure, ...){
     ts = rep(0, nos);
     for(i in 1:nos){
-      ts[i] = SRK(pressure=pressure,
+      ts[i] = SRK(pressure=pressure, method = 'ts',
                   x=1, Ac=Ac[i], Pc=Pc[i], Tc=Tc[i])$temperature;
     }
     return(ts)
@@ -237,7 +237,7 @@ cs.boilingline = function(substances=NULL,
     Ac = Substances[[i]]$Ac;
     Pc = Substances[[i]]$Pc;
     Tc = Substances[[i]]$Tc;
-    TsatSRK = SRK(pressure, x=1, Ac=Ac, Pc=Pc, Tc=Tc); # calc boiling using cubic equation
+    TsatSRK = SRK(pressure, x=1, Ac=Ac, Pc=Pc, Tc=Tc, method = 'ts'); # calc boiling using cubic equation
     Substances[[i]]$TsatSRK = TsatSRK$temperature; 
   }
   m = sum(sapply(Substances, function(mass) mass$Fraction)); 
