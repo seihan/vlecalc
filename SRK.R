@@ -110,17 +110,17 @@ SRK = function(pressure=NULL, temperature=NULL, x=NULL, y=NULL,
                   a=NULL, b=NULL, am=NULL, aij=NULL, alpha=NULL, nos=NULL, ...){
     h = 0;
     for(i in 1:nos){
-      h1 = am / 2 / sqrt(Tc[i*alpha[i]]);
+      h1 = am[i] / 2 / sqrt(Tc[i] * alpha[i]);
       for(j in 1:nos){
-        h = h + x[i] * x[j] * aij[i,j] * (h1 + am[j] / 2 / sqrt(Tc[j] * alpha[j]))
+        h = h + (x[i] * x[j] * aij[i,j] * (h1 + am[j] / 2 / sqrt(Tc[j] * alpha[j])));
       }
     }
-    h = pressure * v * - R * temperature - (a + sqrt(temperature) * h) * log(1 + b / v) / b;
+    h = pressure * v - R * temperature - (a + sqrt(temperature) * h) * log(1 + b / v) / b;
     h = h * 100;
     return(h);
   } # end hsrk
   ssrk = function(temperature = NULL, pressure = NULL, x=NULL, v=NULL,
-                  am=NULL, alpha=NULL, aij=NULL, b=NULL, ...){
+                  am=NULL, alpha=NULL, aij=NULL, b=NULL, nos=NULL, ...){
     s = 0;
     for(i in 1:nos){
       s1 = am[i] / sqrt(temperature * Tc[i] * alpha[i]);
@@ -206,12 +206,19 @@ SRK = function(pressure=NULL, temperature=NULL, x=NULL, y=NULL,
              x = x, a = abl$a, b = abl$b, am = abl$am, aij = abl$aij, alpha = abl$alpha);
     hg = hsrk(temperature = temperature, pressure = pressure, nos = nos, v=vg,
              x = y, a = abg$a, abg$b, am = abg$am, aij = abg$aij, alpha = abg$alpha);
+    sl = ssrk(temperature = temperature, pressure = pressure, x = x, nos = nos, 
+              v = vl, alpha = abl$alpha, aij = abl$aij, am = abl$am, b = abl$b);
+    sg = ssrk(temperature = temperature, pressure = pressure, x = y, nos = nos, 
+              v = vg, alpha = abg$alpha, aij = abg$aij, am = abg$am, b = abg$b);
+    
     result = list(pressure=pressure*1e+5,
                   y=y,
                   phil=phil,
                   phig=phig,
                   dephl=hl,
                   dephg=hg,
+                  depsl=sl,
+                  depsg=sg,
                   S=S,
                   iterations=c);
     return(result);
