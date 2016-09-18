@@ -5,17 +5,17 @@ UNIFAC.gen = function(Substances=NULL,
   # 
   # input: vector with substances or NULL
   #
-  # return: list with 2 matrizes: [[1]] surface parameters (unu)
-  #                               [[2]] interaction parameters (aij)
+  # return: list with 2 matrices: $unu = surface parameters
+  #                               $aij = interaction parameters
   # file: UNIFAC-tbl3.csv contains example substances with group contributions
   #       all new substances are stored in it
   # define functions:
   # 'printf' Formated printing, example: printf('Something equals %d',1)
   printf = function(...) cat(sprintf(...));
   # 'get.aij'
-  get.aij = function(i,j){
-    atbl = read.csv('UNIFAC-tbl2.csv',sep=','); # read UNIFAC interaction paramters from csv file
-    # search the UNIFAC interaction parameter table for the combination of groups
+  get.aij = function(i,j){# read UNIFAC interaction paramters from csv file
+    atbl = read.csv('UNIFAC-tbl2.csv',sep=',');
+    # search insid the UNIFAC interaction parameter table
     for (k in 1:nrow(atbl)){
       if ((atbl[k,1] == i) && (atbl[k,2]== j)){
         return(atbl[k,3]);
@@ -27,21 +27,23 @@ UNIFAC.gen = function(Substances=NULL,
       }
     }
   }
-  # 'get.UNIFAC' Get UNIFAC paramters from table get.unifac('formula') -> Group, Symbol, Rk, Qk
+  # 'get.UNIFAC' Get UNIFAC paramters from table get.unifac('formula') 
+  # -> k, Group, Rk, Qk
   get.UNIFAC = function(formula){
-    utbl = read.csv('UNIFAC-tbl1.csv',sep=','); # read UNIFAC surface paramters from csv file
-    # search the UNIFAC table for functional group by formula and returns the line or 0
-    # formula = case sensitive string
-    line = utbl[grep(paste('^',formula,sep='',' '),utbl$Symbol),];
+    utbl = read.csv('UNIFAC-tbl1.csv',sep=','); # read UNIFAC surface paramters
+    # search the UNIFAC table for functional group by formula and 
+    # return the line or 0
+    # formula = case sensitive string e.g. H2O, OH, CH2=CH, Morpholine
+    line = utbl[grep(paste('^',formula,sep='',' '),utbl$Group),];
     if (nrow(line)==0){
-      line = utbl[grep(paste('^',formula,sep='','$'),utbl$Symbol),];
+      line = utbl[grep(paste('^',formula,sep='','$'),utbl$Group),];
     }
     if (nrow(line)==0){
       stop('\nGroup ',formula,' not found.\n');
     }
     return(line);
   }
-  # 'get.sub' Read the functional group contribution from file, by name
+  # 'get.sub' Read the functional group contribution, by name
   get.sub = function(name){
     subtbl = read.csv('UNIFAC-tbl3.csv',sep=',');
     sub = subtbl[grep(paste('^',name,sep='',' '),subtbl$Name),];
@@ -61,12 +63,13 @@ UNIFAC.gen = function(Substances=NULL,
   if(verbose){
       printf('Welcome to the "UNIFAC MATRIZES GENERATOR"\n\n');
       printf('All known substances are stored in file "UNIFAC-tbl3.csv",\n');
-      printf('new ones must defined by name (1st step) and group contribution (2nd step).\n');
+      printf('new ones can be defined by name and group contribution.');
   }
   if(is.null(sn)){
-    printf('Generate the UNIFAC Matrix in two steps:\n\n1.\tType the names of all substances.');
-    printf('\n2. Type the group contribution for unknown substances.\n\n');
-    printf('1st step.\nType the names of all substances (case sensitive):\t[n-decane,ethanol,water,...]\n\n');
+    printf('Generate the UNIFAC Matrix in two steps:\n\n');
+    printf('1.Type the names of all substances.\n')
+    printf('2. Type the group contribution for unknown substances.\n\n');
+    printf('Type the names of all substances (case sensitive)!');
     # 1. read the names from user input
     sn = readline(); # substances names
     sn = strsplit(sn,',')[[1]]; # split names at seperator ','
@@ -83,21 +86,22 @@ UNIFAC.gen = function(Substances=NULL,
       tmp1 = rbind(tmp1,tmp2); # one substance per row
     }
     else{ # define substance
-      tmp2 = data.frame(Name=sn[i], Groups=NA)[, ] # names in frames have to be equal 
+      tmp2 = data.frame(Name=sn[i], Groups=NA)[, ]
       printf('\nEnter the group contribution for %s:\t[1*CH3 1*CH2 1*OH]',sn[i]);
       tmp2[2] = readline();
       tmp1 = rbind(tmp1,tmp2);
-      write.table(tmp2,file='UNIFAC-tbl3.csv',sep=',',row.names=F,col.names=F,append=T);
+      write.table(tmp2,file='UNIFAC-tbl3.csv',sep=',',
+                  row.names=F,col.names=F,append=T);
     }
   } # transform listed functional groups in matrix
-  groups = strsplit(paste(tmp1[,2]),'\\t'); # 1st split between groups per substances
+  groups = strsplit(paste(tmp1[,2]),'\\t'); # 1st split -> groups per substances
   tmp1 = data.frame();
   for (i in 1:length(groups)){ # from 1st to last substance
     groups[i] = strsplit(groups[[i]],'\\ '); # 2nd split between groups
     nu = rep(0,1);
     gr = rep(NA,1);
     for (j in 1:length(groups[[i]])){ # from 1st to last group per substance
-      tmp1 = strsplit(groups[[i]][j],'\\*')[[1]]; # 3rd split between amount of groups
+      tmp1 = strsplit(groups[[i]][j],'\\*')[[1]]; # 3rd split -> amount of groups
       nu[j] = tmp1[1];
       gr[j] = tmp1[2];
     }
@@ -108,13 +112,13 @@ UNIFAC.gen = function(Substances=NULL,
       tmp2 = rep(0,nrow(num)); # zero column
       num = cbind(num,tmp2); # new substance -> new column
       for(l in 1:length(gr)){ # from 1st to last group per substance
-        pos = grep(paste('^',gr[l],sep='','$'),num[,1]); # check for existing group
+        pos = grep(paste('^',gr[l],sep='','$'),num[,1]); # group exists?
         if (length(pos) > 0){
           num[pos,i+1] = nu[l]; # hit -> set value
         }
         else{ # new group
           tmp2 = rep(0,ncol(num)-2); # repeat zeros for the new line
-          tmp3 = c(gr[l],tmp2,nu[l]); # vector with group, zeros, amount of group
+          tmp3 = c(gr[l],tmp2,nu[l]); # vector with group, 0, amount of group
           num = rbind(num,tmp3); # add the new line
         }
       }
@@ -123,22 +127,24 @@ UNIFAC.gen = function(Substances=NULL,
   nog = nrow(num); # number of groups
   tmp1 = data.frame();
   for (i in 1:nog){
-    tmp2 = get.UNIFAC(num[i,1]); # get the UNIFAC parameters from file 'UNIFAC-tbl1.csv'
+    tmp2 = get.UNIFAC(num[i,1]); # get the UNIFAC parameters
     tmp1 = rbind(tmp1,tmp2);
   }
   if((nrow(tmp1) == nog) || (length(tmp1) == nog) ){
-    unu = cbind(tmp1,num[,-1]); # create data frame with UNIFAC values and amount per substance
-  }
+    unu = cbind(tmp1,num[,-1]);
+  }# data frame with UNIFAC values and amount per substance
   else{
-    stop('Not all groups have been identified. May check for group with get.UNIFAC(group)')
+    stop('Not all groups have been identified. 
+         May check for group with get.UNIFAC(group)')
   }
   for(i in 5:ncol(unu)) unu[,i] = as.numeric(as.character(unu[,i]));
   colnames(unu)[5:ncol(unu)] = sn;
+#  unu = data.frame(unu, row.names = NULL);
   # 3. Generate the interaction parameters matrix for the subgroups
   aij = matrix(0,nog,nog);
   for (i in 1:nog){
     for (j in 1:nog){
-      aij[j,i] = get.aij(unu[j,1],unu[i,1]);
+      aij[j,i] = get.aij(unu[j,2],unu[i,2]);
     }
   }
   if(verbose){
