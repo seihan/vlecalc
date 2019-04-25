@@ -36,3 +36,6 @@ SRK(temperature = 300, x=c(0.4,0.6), Tc=c(647.3, 562.0), Pc=c(221.20, 48.98), Ac
 
 Returns the bubblepoint pressure, gas fractions, fugacity coefficients and the departure functions of the enthalpy 
 and entropy for the binary water-benzene mixture.
+
+![Example VLE Curves](EtOH-Water-TPxy.png)
+
